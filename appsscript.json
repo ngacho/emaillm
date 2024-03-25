@@ -1,25 +1,25 @@
 {
-    "timeZone": "EST",
-    "oauthScopes": [
-      "https://www.googleapis.com/auth/calendar",
-      "https://www.google.com/calendar/feeds",
-      "https://www.googleapis.com/auth/gmail.addons.execute",
-      "https://www.googleapis.com/auth/gmail.addons.current.message.metadata",
-      "https://www.googleapis.com/auth/script.external_request",
-      "https://www.googleapis.com/auth/gmail.addons.current.message.readonly",
-      "https://www.googleapis.com/auth/gmail.addons.current.message.action",
-      "https://www.googleapis.com/auth/gmail.modify"
+  "timeZone": "EST",
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/calendar",
+    "https://www.google.com/calendar/feeds",
+    "https://www.googleapis.com/auth/gmail.addons.execute",
+    "https://www.googleapis.com/auth/gmail.addons.current.message.metadata",
+    "https://www.googleapis.com/auth/script.external_request",
+    "https://www.googleapis.com/auth/gmail.addons.current.message.readonly",
+    "https://www.googleapis.com/auth/gmail.addons.current.message.action",
+    "https://www.googleapis.com/auth/gmail.modify"
+  ],
+  "gmail": {
+    "name": "EmailLM!",
+    "logoUrl": "https://www.gstatic.com/images/icons/material/system/1x/receipt_black_24dp.png",
+    "contextualTriggers": [
+      {
+        "unconditional": {},
+        "onTriggerFunction": "getContextualAddOn"
+      }
     ],
-    "gmail": {
-      "name": "EmailLM!",
-      "logoUrl": "https://www.gstatic.com/images/icons/material/system/1x/receipt_black_24dp.png",
-      "contextualTriggers": [
-        {
-          "unconditional": {},
-          "onTriggerFunction": "getContextualAddOn"
-        }
-      ],
-      "primaryColor": "#41f470",
-      "secondaryColor": "#94f441"
-    }
+    "primaryColor": "#141B41",
+    "secondaryColor": "#EFF7CF"
   }
+}
