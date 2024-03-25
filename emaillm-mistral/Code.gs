@@ -13,30 +13,31 @@ function getContextualAddOn(event) {
 
   const date = new Date().toISOString();
 
-  const emailPrompt = "[INST] You are a helpful code assistant. Your task is to generate actionable tasks and return valid JSON object consisting with task and deadline based on the given email: SUBJECT: " + subject + " "+ snippet + " The details for required steps are below. Specific questions can be directed by email to All my best as you enjoy the upcoming break. Just generate output in the following format action items : an array of objects. Each object has an action item name, and a due deadline in UTC date and time. If there's no deadline, use an empty string. JUST GENERATE THE JSON, DO NOT GIVE ANY EXPLANATIONS [/INST]";
+  const emailPrompt =
+    "[INST] You are a helpful code assistant. Your task is to generate actionable tasks and return valid JSON object consisting with task and deadline based on the given email: SUBJECT: " +
+    subject +
+    " " +
+    snippet +
+    " The details for required steps are below. Specific questions can be directed by email to All my best as you enjoy the upcoming break. Just generate output in the following format action items : an array of objects. Each object has an action item name, and a due deadline in UTC date and time. If there's no deadline, use an empty string. JUST GENERATE THE JSON, DO NOT GIVE ANY EXPLANATIONS [/INST]";
 
   const responseText = extractTasksArray(emailPrompt);
 
-  // Parse the JSON string to an object
-  var obj = JSON.parse(responseText);
-
-  // The 'content' key within 'message' contains a JSON string that represents an array
-  var tasks = JSON.parse(obj.message.content);
-
-  try{
-      // var tasks = extractTasksArray(emailPrompt);
-      const card = buildTasksCard(tasks);
-      return card.build();
-  }catch(error){
+  try {
+    // Parse the JSON string to an object
+    var obj = JSON.parse(responseText);
+    // The 'content' key within 'message' contains a JSON string that represents an array
+    var tasks = JSON.parse(obj.message.content);
+    // var tasks = extractTasksArray(emailPrompt);
+    const card = buildTasksCard(tasks);
+    return card.build();
+  } catch (error) {
     return null;
   }
-  
-  
 }
 
 /**
  * This function shows the tasks on a card and returns the card.
- * 
+ *
  * @param {todo_array} an array containing lists!
  * @returns {card}
  */
@@ -48,86 +49,79 @@ function buildTasksCard(todo_array) {
   );
   var section = CardService.newCardSection();
   // if nothing in array show nothing and return
-  if(!todo_array || todo_array.length <= 0){
+  if (!todo_array || todo_array.length <= 0) {
+    var addTaskButton = CardService.newTextButton()
+      .setText("Add a task")
+      .setOnClickAction(CardService.newAction().setFunctionName("addNewTask"));
 
-      var addTaskButton = CardService.newTextButton()
-        .setText("Add a task")
-        .setOnClickAction(
-          CardService.newAction().setFunctionName("addNewTask")
-        );
+    var addTaskLabel = CardService.newDecoratedText()
+      .setText("No actionable items")
+      .setButton(addTaskButton);
 
-      var addTaskLabel = CardService.newDecoratedText()
-        .setText("No actionable items")
-        .setButton(addTaskButton);
+    section.addWidget(addTaskLabel);
+    card.addSection(section);
 
-
-      section.addWidget(addTaskLabel);
-      card.addSection(section);
-
-      return card;    
+    return card;
   }
 
   todo_array.forEach(function (value, index) {
-
     // Initialize variables to store the action item and deadline
-  var actionItem, deadline;
-  
-  // Check for the presence of keys and assign values accordingly
-  actionItem = value.actionItemName || value.actionItem;
-  
-  // If dueDeadline/deadline is an empty string, use today's date
-  var deadlineString = value.dueDeadline || value.deadline;
+    var actionItem, deadline;
 
-  // timezone offset 
-  var offset = new Date().getTimezoneOffset() * 60000;
-  
-  // Check if deadlineString is empty and assign today's date or parse the date
-  if (!deadlineString || deadlineString === "") {
-    // Use today's date
-    deadline = new Date().getTime() + offset;
-  } else {
-    // Parse the deadlineString as a date
-    deadline = new Date(deadlineString).getTime() + offset;
-  }
-    
-      const title_field_name = "title" + index;
+    // Check for the presence of keys and assign values accordingly
+    actionItem = value.actionItemName || value.actionItem || "";
 
-      // Create a text input widget with default text
-      var textInput = CardService.newTextInput()
-        .setFieldName(title_field_name)
-        .setTitle("Enter task")
-        .setValue(String(actionItem)); // Set default text here
+    // If dueDeadline/deadline is an empty string, use today's date
+    var deadlineString = value.dueDeadline || value.deadline;
 
-      // Create a date/time picker widget
-      const title_date_time = "dateTimePickerField" + index;
+    // timezone offset
+    var offset = new Date().getTimezoneOffset() * 60000;
 
-      var dateTimePicker = CardService.newDateTimePicker()
-        .setFieldName(title_date_time)
-        .setTitle("Select a date and time")
-        .setValueInMsSinceEpoch(deadline); // Set default date/time as the current date/time
+    // Check if deadlineString is empty and assign today's date or parse the date
+    if (!deadlineString || deadlineString === "") {
+      // Use today's date
+      deadline = new Date().getTime() + offset;
+    } else {
+      // Parse the deadlineString as a date
+      deadline = new Date(deadlineString).getTime() + offset;
+    }
 
+    const title_field_name = "title" + index;
 
+    // Create a text input widget with default text
+    var textInput = CardService.newTextInput()
+      .setFieldName(title_field_name)
+      .setTitle("Enter task")
+      .setValue(String(actionItem)); // Set default text here
 
-      var deleteTaskButton = CardService.newTextButton()
-        .setText("Delete")
-        .setOnClickAction(
-          CardService.newAction().setFunctionName("deleteTask")
-          .setParameters({i: String(index)})
-        );
+    // Create a date/time picker widget
+    const title_date_time = "dateTimePickerField" + index;
 
-        var deleteTask = CardService.newDecoratedText()
-          .setText("Remove this item")
-          .setButton(deleteTaskButton);
+    var dateTimePicker = CardService.newDateTimePicker()
+      .setFieldName(title_date_time)
+      .setTitle("Select a date and time")
+      .setValueInMsSinceEpoch(deadline); // Set default date/time as the current date/time
 
-        var taskDivider = CardService.newDivider();
+    var deleteTaskButton = CardService.newTextButton()
+      .setText("Delete")
+      .setOnClickAction(
+        CardService.newAction()
+          .setFunctionName("deleteTask")
+          .setParameters({ i: String(index) })
+      );
 
-        // add widget to the section.
-        
-        section.addWidget(textInput);
-        section.addWidget(dateTimePicker);
-        section.addWidget(deleteTask);
-        section.addWidget(taskDivider);
+    var deleteTask = CardService.newDecoratedText()
+      .setText("Remove this item")
+      .setButton(deleteTaskButton);
 
+    var taskDivider = CardService.newDivider();
+
+    // add widget to the section.
+
+    section.addWidget(textInput);
+    section.addWidget(dateTimePicker);
+    section.addWidget(deleteTask);
+    section.addWidget(taskDivider);
   });
   card.addSection(section);
 
@@ -159,26 +153,23 @@ function buildTasksCard(todo_array) {
   return card;
 }
 
-
 /**
  * This function is responsible for creating a task on the UI
- * @param {event_object} event object, see 
- *       https://developers.google.com/apps-script/add-ons/concepts/event-objects#common_event_object 
+ * @param {event_object} event object, see
+ *       https://developers.google.com/apps-script/add-ons/concepts/event-objects#common_event_object
  * @returns {card_response}
  */
 function addNewTask(e) {
   var date = new Date();
 
   // get tasks on form
-  var tasks = parseFormInputIntoSimplerEvents(
-    e.commonEventObject.formInputs
-  );
+  var tasks = parseFormInputIntoSimplerEvents(e.commonEventObject.formInputs);
 
   // if there are no tasks, create card and update it
-  if(tasks.length<=0){
-    tasks = [{action_item_name: "", deadline: date.toISOString()}]
-  }else{
-    tasks.push({action_item_name: "", deadline: date.toISOString()})
+  if (!tasks || tasks.length <= 0) {
+    tasks = [{ actionItemName: "", deadline: date.toISOString() }];
+  } else {
+    tasks.push({ actionItemName: "", deadline: date.toISOString() });
   }
 
   const card = buildTasksCard(tasks);
@@ -186,21 +177,17 @@ function addNewTask(e) {
   // // update the card.
   var nav = CardService.newNavigation().updateCard(card.build());
 
-  return CardService.newActionResponseBuilder()
-        .setNavigation(nav)
-        .build();
+  return CardService.newActionResponseBuilder().setNavigation(nav).build();
 }
 
 /**
  * This function is responsible for deleting a task on the UI
- * @param {event_object} event object, see 
- *       https://developers.google.com/apps-script/add-ons/concepts/event-objects#common_event_object 
+ * @param {event_object} event object, see
+ *       https://developers.google.com/apps-script/add-ons/concepts/event-objects#common_event_object
  * @returns {card_response}
  */
 function deleteTask(e) {
-  var tasks = parseFormInputIntoSimplerEvents(
-    e.commonEventObject.formInputs
-  );
+  var tasks = parseFormInputIntoSimplerEvents(e.commonEventObject.formInputs);
 
   // var calendarInviteResponse = JSON.stringify(tasks);
 
@@ -219,23 +206,19 @@ function deleteTask(e) {
   // remove it from list.
   tasks.splice(taskIndex, 1);
 
-
   const card = buildTasksCard(tasks);
 
   // update the card.
   var nav = CardService.newNavigation().updateCard(card.build());
 
-  return CardService.newActionResponseBuilder()
-        .setNavigation(nav)
-        .build();
-
+  return CardService.newActionResponseBuilder().setNavigation(nav).build();
 }
 
 // This function will be called when the 'Add To Calendar' button is clicked
 /**
  * This function adds items to calendar when clicked.
- * @param {event_object} event object, see 
- *       https://developers.google.com/apps-script/add-ons/concepts/event-objects#common_event_object 
+ * @param {event_object} event object, see
+ *       https://developers.google.com/apps-script/add-ons/concepts/event-objects#common_event_object
  * @returns {card_response}
  */
 function addToCalendar(e) {
@@ -245,6 +228,14 @@ function addToCalendar(e) {
   );
 
   var calendarInviteCount = 0;
+
+  if (!actionItems || actionItems.length <= 0) {
+    var emptyListText = "Nothing to add to calendar";
+
+    return CardService.newActionResponseBuilder()
+      .setNotification(CardService.newNotification().setText(emptyListText))
+      .build();
+  }
 
   // Loop through each action item to create a calendar event
   for (var i = 0; i < actionItems.length; i++) {
@@ -274,14 +265,13 @@ function addToCalendar(e) {
 /**
  * Function that parses google's weird Json event common object into a streamlined array
  *
- * @params google's form inputs : 
+ * @params google's form inputs :
  * @returns array of action item objects [{action_item_name : name, deadline : deadline.}]
- * 
+ *
  */
 function parseFormInputIntoSimplerEvents(formInputs) {
-  
   var actionItems = [];
-  if(!formInputs){
+  if (!formInputs) {
     return actionItems;
   }
 
@@ -290,7 +280,7 @@ function parseFormInputIntoSimplerEvents(formInputs) {
     var dateTimeKey = "dateTimePickerField" + i;
 
     if (formInputs[titleKey] && formInputs[dateTimeKey]) {
-      var actionItemName = formInputs[titleKey][""]["stringInputs"]["value"][0];
+      var actionItem = formInputs[titleKey][""]["stringInputs"]["value"][0];
       // convert to local time with offset cuz everything else is crazy
       var offset = new Date().getTimezoneOffset() * 60000;
       var msSinceEpoch =
@@ -298,10 +288,12 @@ function parseFormInputIntoSimplerEvents(formInputs) {
       // convert to local time with offset cuz everything else is crazy
       var deadline = new Date(msSinceEpoch);
 
-      actionItems.push({
-        actionItemName: actionItemName,
-        deadline: deadline.toISOString(), // Format the date as ISO string
-      });
+      if (actionItem && deadline) {
+        actionItems.push({
+          actionItemName: actionItem,
+          deadline: deadline.toISOString(), // Format the date as ISO string
+        });
+      }
     } else {
       // If we can't find a matching title or dateTime field, we assume we've processed all items
       break;
@@ -359,46 +351,49 @@ function getCurrentMessage(event) {
   return GmailApp.getMessageById(messageId);
 }
 
-
-tools = [
+const tools = [
   {
-    "type": "function",
-    "function": {
-        "name": "create_todos",
-        "description": "Creates a list of to-dos with specified deadlines in UTC format",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "action_items": {
-                    "available_action_items" :  "boolean",
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "action_item_name": {
-                                "type": "string",
-                                "description": "The name of the action item."
-                            },
-                            "deadline": {
-                                "type": "string",
-                                "format": "date-time",
-                                "description": "The UTC deadline for the action item, formatted as 'YYYY-MM-DDTHH:MM:SSZ'. For immediate or ASAP tasks, use the current UTC date and time."
-                            }
-                        },
-                        "required": ["action_item_name", "deadline"]
-                    },
-                    "description": "A list of action items each with a name and a UTC formatted deadline."
-                }
+    type: "function",
+    function: {
+      name: "create_todos",
+      description:
+        "Creates a list of to-dos with specified deadlines in UTC format",
+      parameters: {
+        type: "object",
+        properties: {
+          action_items: {
+            available_action_items: "boolean",
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                action_item_name: {
+                  type: "string",
+                  description: "The name of the action item.",
+                },
+                deadline: {
+                  type: "string",
+                  format: "date-time",
+                  description:
+                    "The UTC deadline for the action item, formatted as 'YYYY-MM-DDTHH:MM:SSZ'. For immediate or ASAP tasks, use the current UTC date and time.",
+                },
+              },
+              required: ["action_item_name", "deadline"],
             },
-            "required": ["action_items"]
-        }
-    }
-}
-]
+            description:
+              "A list of action items each with a name and a UTC formatted deadline.",
+          },
+        },
+        required: ["action_items"],
+      },
+    },
+  },
+];
 
-var apiKey = PropertiesService.getScriptProperties().getProperty('OPENAI_KEY');
 
-var proxyUrl = PropertiesService.getScriptProperties().getProperty('PROXY_URL');
+var apiKey = PropertiesService.getScriptProperties().getProperty("OPENAI_KEY");
+
+var proxyUrl = PropertiesService.getScriptProperties().getProperty("PROXY_URL");
 
 function extractTasksArray(prompt) {
   // const prompt = "[INST] You are a helpful code assistant. Your task is to generate actionable tasks and return valid JSON object consisting with task and deadline based on the given email: I am resending this important email to bring it to the top of your email to maximize your opportunity. This is a courtesy email. If you have already registered for on-campus housing for commencement - NO ACTION IS NECESSARY. If you do not intend to register for on-campus housing for commencement - NO ACTION IS NECESSARY. If you ARE PLANNING to register for on-campus housing for commencement - TIME IS RUNNING LOW, but it is not too late - Action is required before April 1st. The details for required steps are below. Specific questions can be directed by email to All my best as you enjoy the upcoming break. Just generate output in the following format action items : an array of objects. Each object has an action item name, and a due deadline in UTC date and time. If there's no deadline, use an empty string. JUST GENERATE THE JSON, DO NOT GIVE ANY EXPLANATIONS [/INST]"
@@ -408,33 +403,31 @@ function extractTasksArray(prompt) {
     messages: [
       {
         role: "user",
-        content: prompt
-      }
+        content: prompt,
+      },
     ],
-    stream : false,
-    temperature : 0.001,
-    tools : tools
-  }
-  )
+    stream: false,
+    temperature: 0.001,
+    tools: tools,
+  });
 
   var options = {
-    method: 'post',
-    contentType: 'application/json',
+    method: "post",
+    contentType: "application/json",
     payload: payload,
-    muteHttpExceptions: false
+    muteHttpExceptions: false,
   };
-
 
   var response = UrlFetchApp.fetch(proxyUrl, options);
   Logger.log(response.getResponseCode());
 
-  const parsedJson = JSON.parse(response)
+  const parsedJson = JSON.parse(response);
 
-  var data = parsedJson['message'];
+  var data = parsedJson["message"];
 
   // var content = data['content'];
 
-  var tasks = data['content'];
+  var tasks = data["content"];
 
   return response.getContentText();
 }

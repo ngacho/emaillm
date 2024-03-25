@@ -19,32 +19,30 @@ function getContextualAddOn(event) {
     date +
     "\n" +
     snippet +
-    "  You are an assistant that only responds in JSON. Do not write normal text. You will return output in the following format action items : an array of objects. Each object has an action item name, and a due deadline in UTC date and time. Under no circumstances should you return normal text. Only respond in JSON object with action items array if any, and an empty array if none;"
+    "  You are an assistant that only responds in JSON. Do not write normal text. You will return output in the following format action items : an array of objects. Each object has an action item name, and a due deadline in UTC date and time. Under no circumstances should you return normal text. Only respond in JSON object with action items array if any, and an empty array if none;";
 
   var jsonResponse = getJson(emailPrompt);
   const structured_response = JSON.parse(jsonResponse.getContentText());
-  const choices = structured_response['choices'][0];
-  const assistant_message = choices['message'];
-  const res_content = assistant_message['tool_calls'][0];
-  const res_arguments = res_content['function']['arguments'];
-  try{
+  const choices = structured_response["choices"][0];
+  const assistant_message = choices["message"];
+  const res_content = assistant_message["tool_calls"][0];
+  const res_arguments = res_content["function"]["arguments"];
+  try {
     var action_items = JSON.parse(res_arguments);
- 
 
-    const todo_array = action_items['action_items']; 
+    const todo_array = action_items["action_items"];
 
     const card = buildTasksCard(todo_array);
 
     return card.build();
-
-  }catch(e){
+  } catch (e) {
     return null;
   }
 }
 
 /**
  * This function shows the tasks on a card and returns the card.
- * 
+ *
  * @param {todo_array} an array containing lists!
  * @returns {card}
  */
@@ -56,63 +54,56 @@ function buildTasksCard(todo_array) {
   );
   var section = CardService.newCardSection();
   // if nothing in array show nothing and return
-  if(todo_array.length <= 0){
+  if (todo_array.length <= 0) {
+    var addTaskButton = CardService.newTextButton()
+      .setText("Add a task")
+      .setOnClickAction(CardService.newAction().setFunctionName("addNewTask"));
 
-      var addTaskButton = CardService.newTextButton()
-        .setText("Add a task")
-        .setOnClickAction(
-          CardService.newAction().setFunctionName("addNewTask")
-        );
+    var addTaskLabel = CardService.newDecoratedText()
+      .setText("No actionable items")
+      .setButton(addTaskButton);
 
-      var addTaskLabel = CardService.newDecoratedText()
-        .setText("No actionable items")
-        .setButton(addTaskButton);
+    section.addWidget(addTaskLabel);
+    card.addSection(section);
 
-
-      section.addWidget(addTaskLabel);
-      card.addSection(section);
-
-      return card;    
+    return card;
   }
 
   todo_array.forEach(function (value, index) {
-    
-      const title_field_name = "title" + index;
-      // Create a text input widget with default text
-      var textInput = CardService.newTextInput()
-        .setFieldName(title_field_name)
-        .setTitle("Enter task")
-        .setValue(value["action_item_name"]); // Set default text here
+    const title_field_name = "title" + index;
+    // Create a text input widget with default text
+    var textInput = CardService.newTextInput()
+      .setFieldName(title_field_name)
+      .setTitle("Enter task")
+      .setValue(value["action_item_name"]); // Set default text here
 
-      // Create a date/time picker widget
-      const title_date_time = "dateTimePickerField" + index;
-      var deadlineDate = new Date(value["deadline"]).getTime();
-      var dateTimePicker = CardService.newDateTimePicker()
-        .setFieldName(title_date_time)
-        .setTitle("Select a date and time")
-        .setValueInMsSinceEpoch(deadlineDate); // Set default date/time as the current date/time
+    // Create a date/time picker widget
+    const title_date_time = "dateTimePickerField" + index;
+    var deadlineDate = new Date(value["deadline"]).getTime();
+    var dateTimePicker = CardService.newDateTimePicker()
+      .setFieldName(title_date_time)
+      .setTitle("Select a date and time")
+      .setValueInMsSinceEpoch(deadlineDate); // Set default date/time as the current date/time
 
+    var deleteTaskButton = CardService.newTextButton()
+      .setText("Delete")
+      .setOnClickAction(
+        CardService.newAction()
+          .setFunctionName("deleteTask")
+          .setParameters({ i: String(index) })
+      );
 
+    var deleteTask = CardService.newDecoratedText()
+      .setText("Remove this item")
+      .setButton(deleteTaskButton);
 
-      var deleteTaskButton = CardService.newTextButton()
-        .setText("Delete")
-        .setOnClickAction(
-          CardService.newAction().setFunctionName("deleteTask")
-          .setParameters({i: String(index)})
-        );
+    var taskDivider = CardService.newDivider();
 
-        var deleteTask = CardService.newDecoratedText()
-          .setText("Remove this item")
-          .setButton(deleteTaskButton);
-
-        var taskDivider = CardService.newDivider();
-
-        // add widget to the section.
-        section.addWidget(textInput);
-        section.addWidget(dateTimePicker);
-        section.addWidget(deleteTask);
-        section.addWidget(taskDivider);
-
+    // add widget to the section.
+    section.addWidget(textInput);
+    section.addWidget(dateTimePicker);
+    section.addWidget(deleteTask);
+    section.addWidget(taskDivider);
   });
   card.addSection(section);
 
@@ -144,26 +135,23 @@ function buildTasksCard(todo_array) {
   return card;
 }
 
-
 /**
  * This function is responsible for creating a task on the UI
- * @param {event_object} event object, see 
- *       https://developers.google.com/apps-script/add-ons/concepts/event-objects#common_event_object 
+ * @param {event_object} event object, see
+ *       https://developers.google.com/apps-script/add-ons/concepts/event-objects#common_event_object
  * @returns {card_response}
  */
 function addNewTask(e) {
   var date = new Date();
 
   // get tasks on form
-  var tasks = parseFormInputIntoSimplerEvents(
-    e.commonEventObject.formInputs
-  );
+  var tasks = parseFormInputIntoSimplerEvents(e.commonEventObject.formInputs);
 
   // if there are no tasks, create card and update it
-  if(tasks.length<=0){
-    tasks = [{action_item_name: "", deadline: date.toISOString()}]
-  }else{
-    tasks.push({action_item_name: "", deadline: date.toISOString()})
+  if (tasks.length <= 0) {
+    tasks = [{ action_item_name: "", deadline: date.toISOString() }];
+  } else {
+    tasks.push({ action_item_name: "", deadline: date.toISOString() });
   }
 
   const card = buildTasksCard(tasks);
@@ -171,21 +159,17 @@ function addNewTask(e) {
   // // update the card.
   var nav = CardService.newNavigation().updateCard(card.build());
 
-  return CardService.newActionResponseBuilder()
-        .setNavigation(nav)
-        .build();
+  return CardService.newActionResponseBuilder().setNavigation(nav).build();
 }
 
 /**
  * This function is responsible for deleting a task on the UI
- * @param {event_object} event object, see 
- *       https://developers.google.com/apps-script/add-ons/concepts/event-objects#common_event_object 
+ * @param {event_object} event object, see
+ *       https://developers.google.com/apps-script/add-ons/concepts/event-objects#common_event_object
  * @returns {card_response}
  */
 function deleteTask(e) {
-  var tasks = parseFormInputIntoSimplerEvents(
-    e.commonEventObject.formInputs
-  );
+  var tasks = parseFormInputIntoSimplerEvents(e.commonEventObject.formInputs);
 
   // get the index of task to be deleted.
   var index = e.commonEventObject.parameters.i;
@@ -196,27 +180,23 @@ function deleteTask(e) {
   // remove it from list.
   tasks.splice(taskIndex, 1);
 
-
   const card = buildTasksCard(tasks);
 
   // update the card.
   var nav = CardService.newNavigation().updateCard(card.build());
 
-  return CardService.newActionResponseBuilder()
-        .setNavigation(nav)
-        .build();
-
+  return CardService.newActionResponseBuilder().setNavigation(nav).build();
 }
 
 function createDummyTasks() {
   const tasks = [
     {
       action_item_name: "Register for on-campus housing for commencement ",
-      deadline: "2024-03-23T19:25:00.000Z"
+      deadline: "2024-03-23T19:25:00.000Z",
     },
     {
       action_item_name: "Order your cap and gown",
-      deadline: "2024-03-23T19:25:00.000Z"
+      deadline: "2024-03-23T19:25:00.000Z",
     },
   ];
 
@@ -226,8 +206,8 @@ function createDummyTasks() {
 // This function will be called when the 'Add To Calendar' button is clicked
 /**
  * This function adds items to calendar when clicked.
- * @param {event_object} event object, see 
- *       https://developers.google.com/apps-script/add-ons/concepts/event-objects#common_event_object 
+ * @param {event_object} event object, see
+ *       https://developers.google.com/apps-script/add-ons/concepts/event-objects#common_event_object
  * @returns {card_response}
  */
 function addToCalendar(e) {
@@ -266,14 +246,13 @@ function addToCalendar(e) {
 /**
  * Function that parses google's weird Json event common object into a streamlined array
  *
- * @params google's form inputs : 
+ * @params google's form inputs :
  * @returns array of action item objects [{action_item_name : name, deadline : deadline.}]
- * 
+ *
  */
 function parseFormInputIntoSimplerEvents(formInputs) {
-  
   var actionItems = [];
-  if(!formInputs){
+  if (!formInputs) {
     return actionItems;
   }
 
@@ -351,54 +330,56 @@ function getCurrentMessage(event) {
   return GmailApp.getMessageById(messageId);
 }
 
-
 tools = [
   {
-    "type": "function",
-    "function": {
-        "name": "create_todos",
-        "description": "Creates a list of to-dos with specified deadlines in UTC format",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "action_items": {
-                    "available_action_items" :  "boolean",
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "action_item_name": {
-                                "type": "string",
-                                "description": "The name of the action item."
-                            },
-                            "deadline": {
-                                "type": "string",
-                                "format": "date-time",
-                                "description": "The UTC deadline for the action item, formatted as 'YYYY-MM-DDTHH:MM:SSZ'. For immediate or ASAP tasks, use the current UTC date and time."
-                            }
-                        },
-                        "required": ["action_item_name", "deadline"]
-                    },
-                    "description": "A list of action items each with a name and a UTC formatted deadline."
-                }
+    type: "function",
+    function: {
+      name: "create_todos",
+      description:
+        "Creates a list of to-dos with specified deadlines in UTC format",
+      parameters: {
+        type: "object",
+        properties: {
+          action_items: {
+            available_action_items: "boolean",
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                action_item_name: {
+                  type: "string",
+                  description: "The name of the action item.",
+                },
+                deadline: {
+                  type: "string",
+                  format: "date-time",
+                  description:
+                    "The UTC deadline for the action item, formatted as 'YYYY-MM-DDTHH:MM:SSZ'. For immediate or ASAP tasks, use the current UTC date and time.",
+                },
+              },
+              required: ["action_item_name", "deadline"],
             },
-            "required": ["action_items"]
-        }
-    }
-}
-]
+            description:
+              "A list of action items each with a name and a UTC formatted deadline.",
+          },
+        },
+        required: ["action_items"],
+      },
+    },
+  },
+];
 
-var apiKey = PropertiesService.getScriptProperties().getProperty('OPENAI_KEY');
+var apiKey = PropertiesService.getScriptProperties().getProperty("OPENAI_KEY");
 
 function getJson(prompt) {
-  var apiUrl = 'https://api.openai.com/v1/chat/completions';
+  var apiUrl = "https://api.openai.com/v1/chat/completions";
   var payload = JSON.stringify({
     model: "gpt-4",
     messages: [
-        {
-            "role": "user",
-            "content": prompt
-        }
+      {
+        role: "user",
+        content: prompt,
+      },
     ],
     temperature: 0.001,
     max_tokens: 256,
@@ -409,13 +390,13 @@ function getJson(prompt) {
   });
 
   var options = {
-    method: 'post',
-    contentType: 'application/json',
+    method: "post",
+    contentType: "application/json",
     headers: {
-      'Authorization': 'Bearer ' + apiKey
+      Authorization: "Bearer " + apiKey,
     },
     payload: payload,
-    muteHttpExceptions: true
+    muteHttpExceptions: true,
   };
 
   var response = UrlFetchApp.fetch(apiUrl, options);
